@@ -64,6 +64,19 @@ plot_relationships <- function(dataset, variables = "all", n_highlight = 500) {
 
 }
 
-plot_relationships(full_data)
+# Plot and save
+full_data <- full_data[,c("richness", "bathymetry_mean", "coastdist", "y", "x", "PAR_mean_mean", 
+                          "rugosity", "siconc_mean", "so_mean", "thetao_mean")]
+colnames(full_data)[2:ncol(full_data)] <- c(
+    "Depth", "Distance to Coast", "Latitude", "Longitude", "PAR",
+    "Rugosity", "Sea ice", "Salinity", "Sea surface temperature"
+)
+plot_relationships(full_data) +
+    theme(strip.background = element_rect(fill = "#ffffff", color = "black"),
+          strip.text = element_text(color = "black", face = "bold"))
+
+ggsave("figures/variables-relation.jpg", quality = 100)
+
+# See others
 plot_relationships(grid6_data)
 plot_relationships(grid5_data)

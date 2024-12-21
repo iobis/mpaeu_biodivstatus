@@ -15,6 +15,7 @@ library(RColorBrewer)
 library(akima)
 library(dplyr)
 library(gridExtra)
+sf::sf_use_s2(FALSE)
 source("functions/response-curves.R")
 set.seed(2023)
 
@@ -95,7 +96,18 @@ m1_brt$contributions %>%
 
 
 # Get univariate partial response curves
-get_resp_curves(stratified_sample, m1_brt, variables)
+resp_curves <- get_resp_curves(stratified_sample, m1_brt, variables)
+
+# Save this plot
+resp_curves$data$variable <- as.factor(resp_curves$data$variable)
+levels(resp_curves$data$variable) <- c(
+    "Depth", "Distance to Coast", "Latitude", "Longitude", "PAR",
+    "Rugosity", "Sea ice", "Salinity", "Sea surface temperature"
+)
+resp_curves +
+    theme(strip.background = element_rect(fill = "#ffffff", color = "black"),
+          strip.text = element_text(color = "black", face = "bold"))
+ggsave("figures/brt-respcurves.jpg", quality = 100)
 
 # Get bivariate for the 4 most important variables
 best_vars <- m1_brt$contributions[order(m1_brt$contributions$rel.inf, decreasing = T),][1:4,"var"]
@@ -177,7 +189,7 @@ to_get_block <- terra::vect(
     stratified_sample[,c("richness", variables_alt)],
     crs = "EPSG:4326"
 )
-blocks_size <- blockCV::cv_spatial_autocor(x = to_get_block, column = variables_alt[!variables_alt %in% c("lon", "lat")])
+blocks_size <- blockCV::cv_spatial_autocor(x = to_get_block, column = variables[!variables %in% c("lon", "lat")])
 
 blocks <- blockCV::cv_spatial(to_get_block, size = blocks_size$range)
 
@@ -214,7 +226,7 @@ m3_brt$contributions %>%
 
 
 # Get univariate partial response curves
-get_resp_curves(stratified_sample, m3_brt, variables)
+resp_curves <- get_resp_curves(stratified_sample, m3_brt, variables)
 
 # Get bivariate for the 4 most important variables
 best_vars <- m3_brt$contributions[order(m3_brt$contributions$rel.inf, decreasing = T),][1:4,"var"]

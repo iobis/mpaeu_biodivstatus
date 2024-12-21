@@ -7,3 +7,5 @@ The underlying data is available in the S3 bucket s3://mpaeu-dist/ and in the Sh
 The study area shapefile is available on the repository [iobis/mpaeu_studyarea](https://github.com/iobis/mpaeu_studyarea)
 
 Other details (for example, how to obtain the raw data used in the `raw-richness.R` code) are available in the repository [iobis/mpaeu_sdm](https://github.com/iobis/mpaeu_sdm)
+
+NOTE: this is a preliminary analysis.

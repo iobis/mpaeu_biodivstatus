@@ -11,6 +11,7 @@
 library(terra)
 library(ggplot2)
 library(sf)
+library(patchwork)
 sf::sf_use_s2(FALSE)
 fs::dir_create("figures")
 
@@ -50,3 +51,90 @@ for (i in seq_along(ric_preds)) {
     ggsave(filename = file.path("figures", paste0("richness-", titles[i], ".jpg")),
     plot = p1, quality = 100, width = 11, height = 7)
 }
+
+# For the full richness map, produce also a detailed view
+
+full_richness <- rast("data/richness/richness_full_rf_202411.tif")
+full_richness <- crop(mask(full_richness, europe), europe)
+
+# From marineregions.org, pre-processed on QGIS to remove areas out of our region
+iho <- vect("data/World_Seas_IHO_v3.shp")
+
+full_richness_df <- as.data.frame(full_richness, xy = T)
+colnames(full_richness_df)[3] <- "Richness"
+
+p1 <- ggplot() +
+    geom_sf(data = wrld, fill = "grey90", color = "grey90") +
+    geom_sf(data = europe_buff, fill = "grey90", color = "grey90") +
+    geom_raster(data = full_richness_df, aes(x = x, y = y, fill = Richness)) +
+    scale_fill_distiller(palette = "Blues", direction = 1) +
+    theme_light() +
+    xlab(NULL) + ylab(NULL) +
+    ggtitle("All groups") +
+    theme(panel.border = element_blank())
+
+# Baltic
+baltic <- crop(full_richness, iho[iho$mpa_region == "baltic",])
+baltic <- as.data.frame(baltic, xy = T)
+colnames(baltic)[3] <- "Richness"
+
+# Black sea
+black_sea <- crop(full_richness, iho[iho$mpa_region == "black_sea",])
+black_sea <- as.data.frame(black_sea, xy = T)
+colnames(black_sea)[3] <- "Richness"
+
+# Med
+med <- crop(full_richness, iho[iho$mpa_region == "mediterranean",])
+med <- as.data.frame(med, xy = T)
+colnames(med)[3] <- "Richness"
+
+get_lims <- function(what = "x", where = "baltic") {
+    sl <- iho[iho$mpa_region == where,]
+    sl <- ext(sl)
+    if (what == "x") {
+        unname(sl[1:2])
+    } else {
+        unname(sl[3:4])
+    }
+}
+
+p2 <- ggplot() +
+    geom_sf(data = wrld, fill = "grey90", color = "grey90") +
+    geom_sf(data = europe_buff, fill = "grey90", color = "grey90") +
+    geom_raster(data = baltic, aes(x = x, y = y, fill = Richness)) +
+    scale_fill_distiller(palette = "Blues", direction = 1) +
+    theme_light() +
+    xlab(NULL) + ylab(NULL) +
+    ggtitle("Baltic Sea") +
+    coord_sf(xlim = get_lims("x", "baltic"), ylim = get_lims("y", "baltic")) +
+    theme(panel.border = element_blank());p2
+
+p3 <- ggplot() +
+    geom_sf(data = wrld, fill = "grey90", color = "grey90") +
+    geom_sf(data = europe_buff, fill = "grey90", color = "grey90") +
+    geom_raster(data = black_sea, aes(x = x, y = y, fill = Richness)) +
+    scale_fill_distiller(palette = "Blues", direction = 1) +
+    theme_light() +
+    xlab(NULL) + ylab(NULL) +
+    ggtitle("Black Sea") +
+    coord_sf(xlim = get_lims("x", "black_sea"), ylim = get_lims("y", "black_sea")) +
+    theme(panel.border = element_blank());p3
+
+p4 <- ggplot() +
+    geom_sf(data = wrld, fill = "grey90", color = "grey90") +
+    geom_sf(data = europe_buff, fill = "grey90", color = "grey90") +
+    geom_raster(data = med, aes(x = x, y = y, fill = Richness)) +
+    scale_fill_distiller(palette = "Blues", direction = 1) +
+    theme_light() +
+    xlab(NULL) + ylab(NULL) +
+    ggtitle("Mediterranean Sea") +
+    coord_sf(xlim = get_lims("x", "mediterranean"), ylim = get_lims("y", "mediterranean")) +
+    theme(panel.border = element_blank());p4
+
+(p1 & theme(legend.position = "bottom")) + ((p2/p3/p4) & theme(
+    legend.position = "none", axis.text = element_blank(),
+    axis.ticks = element_blank()
+))
+
+ggsave(filename = file.path("figures", paste0("richness-detailed.jpg")),
+ quality = 100, width = 9, height = 8)
